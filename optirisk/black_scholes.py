@@ -35,15 +35,16 @@ class EuropeanOption:
         if self.option_type not in {"call", "put"}:
             raise ValueError("option_type must be call or put")
 
-    def bumped(self, **changes: float | str) -> "EuropeanOption":
+    def bumped(self, **changes: float | str) -> EuropeanOption:
         return replace(self, **changes)
 
 
 def d1_d2(option: EuropeanOption) -> tuple[float, float]:
     sqrt_t = sqrt(option.maturity_years)
-    numerator = log(option.spot / option.strike) + (
-        option.rate - option.dividend_yield + 0.5 * option.volatility**2
-    ) * option.maturity_years
+    numerator = (
+        log(option.spot / option.strike)
+        + (option.rate - option.dividend_yield + 0.5 * option.volatility**2) * option.maturity_years
+    )
     d1 = numerator / (option.volatility * sqrt_t)
     return d1, d1 - option.volatility * sqrt_t
 
@@ -104,8 +105,7 @@ def put_call_parity_error(call: EuropeanOption, put: EuropeanOption) -> float:
     if any(getattr(call, name) != getattr(put, name) for name in attributes):
         raise ValueError("call and put must share contract parameters")
     left = price(call) - price(put)
-    right = (
-        call.spot * exp(-call.dividend_yield * call.maturity_years)
-        - call.strike * exp(-call.rate * call.maturity_years)
+    right = call.spot * exp(-call.dividend_yield * call.maturity_years) - call.strike * exp(
+        -call.rate * call.maturity_years
     )
     return float(left - right)

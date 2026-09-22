@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import replace
-from typing import Any, Iterable
+from typing import Any
 
 from .black_scholes import EuropeanOption, greeks, price
 from .portfolio import OptionPortfolio, OptionPosition
@@ -60,10 +61,7 @@ def delta_gamma_vega_approximation(
     vol_points = vol_shock * 100.0
     theta_days = float(elapsed_days)
     approximate = (
-        g["delta"] * ds
-        + 0.5 * g["gamma"] * ds * ds
-        + g["vega_1pct"] * vol_points
-        + g["theta_day"] * theta_days
+        g["delta"] * ds + 0.5 * g["gamma"] * ds * ds + g["vega_1pct"] * vol_points + g["theta_day"] * theta_days
     )
     shocked = replace(
         option,

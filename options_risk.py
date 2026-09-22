@@ -54,7 +54,9 @@ def shock_grid(o: Option, spot_shocks=(-0.1, -0.05, 0, 0.05, 0.1), vol_shocks=(-
     rows = []
     for ds in spot_shocks:
         for dv in vol_shocks:
-            shocked = Option(o.spot * (1 + ds), o.strike, o.maturity, o.rate, max(0.001, o.volatility + dv), o.option_type)
+            shocked = Option(
+                o.spot * (1 + ds), o.strike, o.maturity, o.rate, max(0.001, o.volatility + dv), o.option_type
+            )
             p = price(shocked)
             rows.append({"spot_shock": ds, "vol_shock": dv, "price": p, "pnl": p - base})
     return rows
