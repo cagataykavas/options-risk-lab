@@ -75,7 +75,9 @@ class CalendarVarianceTests(unittest.TestCase):
 
     def test_input_order_does_not_change_evidence(self) -> None:
         forward = audit_calendar_variance(artifact(clean_quotes()), now=NOW)
-        reverse = audit_calendar_variance(artifact(list(reversed(clean_quotes()))), now=NOW)
+        reverse = audit_calendar_variance(
+            artifact(list(reversed(clean_quotes()))), now=NOW
+        )
         self.assertEqual(forward.evidence_digest, reverse.evidence_digest)
         self.assertEqual(forward.to_dict(), reverse.to_dict())
 
@@ -88,7 +90,9 @@ class CalendarVarianceTests(unittest.TestCase):
     def test_policy_changes_evidence_identity(self) -> None:
         base = audit_calendar_variance(artifact(clean_quotes()), now=NOW)
         changed = audit_calendar_variance(
-            artifact(clean_quotes()), policy=CalendarPolicy(variance_tolerance=1e-8), now=NOW
+            artifact(clean_quotes()),
+            policy=CalendarPolicy(variance_tolerance=1e-8),
+            now=NOW,
         )
         self.assertNotEqual(base.policy_digest, changed.policy_digest)
         self.assertNotEqual(base.evidence_digest, changed.evidence_digest)
@@ -113,7 +117,9 @@ class CalendarVarianceTests(unittest.TestCase):
         first = audit_calendar_variance(artifact(quotes), now=NOW)
         short_variance = 0.20**2 * (30 * 24 * 60 * 60) / (365.25 * 24 * 60 * 60)
         long_years = (91 * 24 * 60 * 60) / (365.25 * 24 * 60 * 60)
-        quotes[1]["implied_volatility"] = math.sqrt((short_variance - 5e-11) / long_years)
+        quotes[1]["implied_volatility"] = math.sqrt(
+            (short_variance - 5e-11) / long_years
+        )
         result = audit_calendar_variance(artifact(quotes), now=NOW)
         self.assertTrue(first.accepted)
         self.assertTrue(result.accepted)
@@ -145,7 +151,9 @@ class CalendarVarianceTests(unittest.TestCase):
     def test_rejects_stale_artifact(self) -> None:
         with self.assertRaisesRegex(ArtifactError, "stale"):
             audit_calendar_variance(
-                artifact(clean_quotes()), policy=CalendarPolicy(max_quote_age_seconds=30), now=NOW
+                artifact(clean_quotes()),
+                policy=CalendarPolicy(max_quote_age_seconds=30),
+                now=NOW,
             )
 
     def test_rejects_future_dated_artifact(self) -> None:
@@ -167,7 +175,11 @@ class CalendarVarianceTests(unittest.TestCase):
             audit_calendar_variance(value, now=NOW)
 
     def test_rejects_non_finite_and_non_positive_numbers(self) -> None:
-        for field, bad in (("strike", math.nan), ("forward", 0), ("implied_volatility", math.inf)):
+        for field, bad in (
+            ("strike", math.nan),
+            ("forward", 0),
+            ("implied_volatility", math.inf),
+        ):
             with self.subTest(field=field):
                 quotes = clean_quotes()[:2]
                 quotes[0][field] = bad
@@ -199,9 +211,13 @@ class CalendarVarianceTests(unittest.TestCase):
     def test_rejects_quote_and_node_budget_overflow(self) -> None:
         quotes = clean_quotes()
         with self.assertRaisesRegex(ArtifactError, "quote budget"):
-            audit_calendar_variance(artifact(quotes), policy=CalendarPolicy(max_quotes=3), now=NOW)
+            audit_calendar_variance(
+                artifact(quotes), policy=CalendarPolicy(max_quotes=3), now=NOW
+            )
         with self.assertRaisesRegex(ArtifactError, "node budget"):
-            audit_calendar_variance(artifact(quotes), policy=CalendarPolicy(max_nodes=1), now=NOW)
+            audit_calendar_variance(
+                artifact(quotes), policy=CalendarPolicy(max_nodes=1), now=NOW
+            )
 
     def test_rejects_invalid_policy(self) -> None:
         with self.assertRaises(ArtifactError):
@@ -233,8 +249,20 @@ class CalendarVarianceTests(unittest.TestCase):
             output_path = root / "report.json"
             generated_at = datetime.now(UTC)
             cli_quotes = [
-                quote("atm", (generated_at + timedelta(days=30)).isoformat(), 100.0, 100.0, 0.20),
-                quote("atm", (generated_at + timedelta(days=90)).isoformat(), 100.0, 100.0, 0.21),
+                quote(
+                    "atm",
+                    (generated_at + timedelta(days=30)).isoformat(),
+                    100.0,
+                    100.0,
+                    0.20,
+                ),
+                quote(
+                    "atm",
+                    (generated_at + timedelta(days=90)).isoformat(),
+                    100.0,
+                    100.0,
+                    0.21,
+                ),
             ]
             cli_artifact = artifact(cli_quotes)
             cli_artifact["generated_at"] = generated_at.isoformat()
@@ -247,7 +275,9 @@ class CalendarVarianceTests(unittest.TestCase):
                 "--output",
                 str(output_path),
             ]
-            accepted = subprocess.run(command, check=False, capture_output=True, text=True)
+            accepted = subprocess.run(
+                command, check=False, capture_output=True, text=True
+            )
             self.assertEqual(accepted.returncode, 0, accepted.stderr)
             self.assertTrue(json.loads(output_path.read_text())["accepted"])
 
@@ -255,12 +285,16 @@ class CalendarVarianceTests(unittest.TestCase):
             values[1]["implied_volatility"] = 0.05
             cli_artifact["quotes"] = values
             input_path.write_text(json.dumps(cli_artifact), encoding="utf-8")
-            rejected = subprocess.run(command, check=False, capture_output=True, text=True)
+            rejected = subprocess.run(
+                command, check=False, capture_output=True, text=True
+            )
             self.assertEqual(rejected.returncode, 2)
             self.assertFalse(json.loads(output_path.read_text())["accepted"])
 
             input_path.write_text("{}", encoding="utf-8")
-            malformed = subprocess.run(command, check=False, capture_output=True, text=True)
+            malformed = subprocess.run(
+                command, check=False, capture_output=True, text=True
+            )
             self.assertEqual(malformed.returncode, 3)
 
 

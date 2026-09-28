@@ -130,7 +130,9 @@ def _identifier(value: Any, field: str, *, max_length: int = 128) -> str:
 
 
 def _canonical_digest(value: Any) -> str:
-    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    encoded = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode()
     return hashlib.sha256(encoded).hexdigest()
 
 
@@ -149,7 +151,9 @@ def _quote_from_mapping(raw: Any) -> SurfaceQuote:
         expiry=_parse_datetime(raw["expiry"], "expiry"),
         strike=_finite_positive(raw["strike"], "strike"),
         forward=_finite_positive(raw["forward"], "forward"),
-        implied_volatility=_finite_positive(raw["implied_volatility"], "implied_volatility"),
+        implied_volatility=_finite_positive(
+            raw["implied_volatility"], "implied_volatility"
+        ),
     )
 
 
@@ -166,7 +170,13 @@ def audit_calendar_variance(
     """
     if not isinstance(artifact, Mapping):
         raise ArtifactError("artifact must be an object")
-    expected = {"schema_version", "generated_at", "underlying_id", "surface_revision", "quotes"}
+    expected = {
+        "schema_version",
+        "generated_at",
+        "underlying_id",
+        "surface_revision",
+        "quotes",
+    }
     if set(artifact) != expected:
         raise ArtifactError("artifact fields do not match the schema")
     if artifact["schema_version"] != SCHEMA_VERSION:
@@ -217,7 +227,10 @@ def audit_calendar_variance(
 
     if len(grouped) > policy.max_nodes:
         raise ArtifactError("node budget exceeded")
-    if any(len(node_quotes) < policy.min_maturities_per_node for node_quotes in grouped.values()):
+    if any(
+        len(node_quotes) < policy.min_maturities_per_node
+        for node_quotes in grouped.values()
+    ):
         raise ArtifactError("insufficient maturities for a node")
 
     comparisons = 0
@@ -290,7 +303,9 @@ def load_artifact(path: Path, *, max_bytes: int = 2_000_000) -> dict[str, Any]:
         value = json.loads(
             path.read_text(encoding="utf-8"),
             object_pairs_hook=_strict_object,
-            parse_constant=lambda _: (_ for _ in ()).throw(ArtifactError("non-finite JSON number")),
+            parse_constant=lambda _: (_ for _ in ()).throw(
+                ArtifactError("non-finite JSON number")
+            ),
         )
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ArtifactError("unable to parse input JSON") from exc
@@ -301,8 +316,12 @@ def load_artifact(path: Path, *, max_bytes: int = 2_000_000) -> dict[str, Any]:
 
 def write_report_atomic(path: Path, report: CalendarVarianceReport) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(report.to_dict(), sort_keys=True, indent=2, allow_nan=False) + "\n"
-    descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent, text=True)
+    payload = (
+        json.dumps(report.to_dict(), sort_keys=True, indent=2, allow_nan=False) + "\n"
+    )
+    descriptor, temporary = tempfile.mkstemp(
+        prefix=f".{path.name}.", dir=path.parent, text=True
+    )
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
             handle.write(payload)
@@ -318,7 +337,9 @@ def write_report_atomic(path: Path, report: CalendarVarianceReport) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Audit calendar total-variance monotonicity")
+    parser = argparse.ArgumentParser(
+        description="Audit calendar total-variance monotonicity"
+    )
     parser.add_argument("artifact", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
