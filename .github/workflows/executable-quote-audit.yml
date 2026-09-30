@@ -1,0 +1,33 @@
+name: executable-quote-audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install validation tools
+        run: python -m pip install pytest==9.1.1 ruff==0.16.9
+      - name: Static checks
+        run: |
+          ruff check optirisk/executable_arbitrage.py tests/test_executable_arbitrage.py
+          ruff format --check optirisk/executable_arbitrage.py tests/test_executable_arbitrage.py
+          python -m compileall -q optirisk tests
+      - name: Focused test suite
+        run: python -m pytest -q tests/test_executable_arbitrage.py
+      - name: Existing risk demo
+        run: python options_risk.py >/dev/null
