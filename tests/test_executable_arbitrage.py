@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+
 from optirisk.black_scholes import EuropeanOption, price
 from optirisk.executable_arbitrage import (
     ArtifactError,
@@ -55,7 +56,9 @@ def codes(report: dict[str, object]) -> list[str]:
     return [finding["code"] for finding in report["findings"]]  # type: ignore[index]
 
 
-def test_accepts_executable_arbitrage_free_snapshot(clean_snapshot: dict[str, object]) -> None:
+def test_accepts_executable_arbitrage_free_snapshot(
+    clean_snapshot: dict[str, object],
+) -> None:
     report = audit_snapshot(clean_snapshot, evaluated_at=NOW)
 
     assert report["status"] == "accepted"
@@ -92,7 +95,9 @@ def test_detects_executable_vertical_violations(
 def test_detects_executable_butterfly_credit(
     clean_snapshot: dict[str, object], option_type: str
 ) -> None:
-    rows = [row for row in clean_snapshot["quotes"] if row["option_type"] == option_type]  # type: ignore[union-attr]
+    rows = [
+        row for row in clean_snapshot["quotes"] if row["option_type"] == option_type
+    ]  # type: ignore[union-attr]
     rows[1]["bid"] = 9.0
 
     report = audit_snapshot(clean_snapshot, evaluated_at=NOW)
@@ -140,9 +145,18 @@ def test_respects_profit_hurdle(clean_snapshot: dict[str, object]) -> None:
     [
         (lambda data: data.update(spot_bid=101.0), "CROSSED_SPOT_MARKET"),
         (lambda data: data["quotes"][0].update(bid=13.0), "CROSSED_OPTION_MARKET"),
-        (lambda data: data["quotes"][0].update(bid=0.01, ask=2.0), "EXCESSIVE_RELATIVE_SPREAD"),
-        (lambda data: data.update(observed_at="2026-09-30T23:55:00Z"), "STALE_SNAPSHOT"),
-        (lambda data: data["quotes"][0].update(observed_at="2026-10-01T00:01:00Z"), "FUTURE_QUOTE"),
+        (
+            lambda data: data["quotes"][0].update(bid=0.01, ask=2.0),
+            "EXCESSIVE_RELATIVE_SPREAD",
+        ),
+        (
+            lambda data: data.update(observed_at="2026-09-30T23:55:00Z"),
+            "STALE_SNAPSHOT",
+        ),
+        (
+            lambda data: data["quotes"][0].update(observed_at="2026-10-01T00:01:00Z"),
+            "FUTURE_QUOTE",
+        ),
     ],
 )
 def test_rejects_market_quality_and_time_failures(
@@ -177,7 +191,9 @@ def test_malformed_artifacts_fail_closed(
         audit_snapshot(clean_snapshot, evaluated_at=NOW)
 
 
-def test_rejects_non_datetime_evaluation_time(clean_snapshot: dict[str, object]) -> None:
+def test_rejects_non_datetime_evaluation_time(
+    clean_snapshot: dict[str, object],
+) -> None:
     with pytest.raises(ArtifactError, match="must be a datetime"):
         audit_snapshot(clean_snapshot, evaluated_at="2026-10-01T00:00:00Z")  # type: ignore[arg-type]
 
@@ -198,7 +214,9 @@ def test_enforces_quote_and_strategy_budgets(clean_snapshot: dict[str, object]) 
         )
 
 
-def test_report_is_deterministic_and_hides_raw_prices(clean_snapshot: dict[str, object]) -> None:
+def test_report_is_deterministic_and_hides_raw_prices(
+    clean_snapshot: dict[str, object],
+) -> None:
     first = audit_snapshot(clean_snapshot, evaluated_at=NOW)
     reordered = deepcopy(clean_snapshot)
     reordered["quotes"].reverse()  # type: ignore[union-attr]
@@ -239,7 +257,9 @@ def test_maximum_quote_budget_is_deterministic_and_bounded() -> None:
                     option_type=option_type,  # type: ignore[arg-type]
                 )
             )
-            quotes.append(quote(option_type, float(strike), max(0.0, fair - 0.005), fair + 0.005))
+            quotes.append(
+                quote(option_type, float(strike), max(0.0, fair - 0.005), fair + 0.005)
+            )
     payload = {
         "schema_version": "1.0",
         "snapshot_id": "bounded-48x2",

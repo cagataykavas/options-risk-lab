@@ -200,7 +200,9 @@ def _parse_snapshot(payload: Any, policy: AuditPolicy) -> Snapshot:
                 strike=strike,
                 bid=bid,
                 ask=ask,
-                observed_at=_parse_time(row["observed_at"], f"quotes[{index}].observed_at"),
+                observed_at=_parse_time(
+                    row["observed_at"], f"quotes[{index}].observed_at"
+                ),
             )
         )
     return Snapshot(
@@ -246,7 +248,9 @@ def _serialized_snapshot(snapshot: Snapshot) -> dict[str, Any]:
                 "ask": quote.ask,
                 "observed_at": quote.observed_at.isoformat(),
             }
-            for quote in sorted(snapshot.quotes, key=lambda q: (q.option_type, q.strike))
+            for quote in sorted(
+                snapshot.quotes, key=lambda q: (q.option_type, q.strike)
+            )
         ],
     }
 
@@ -269,7 +273,9 @@ def _finding(
 def _estimated_strategy_checks(groups: dict[str, list[Quote]]) -> int:
     calls = len(groups["call"])
     puts = len(groups["put"])
-    matched = len({q.strike for q in groups["call"]} & {q.strike for q in groups["put"]})
+    matched = len(
+        {q.strike for q in groups["call"]} & {q.strike for q in groups["put"]}
+    )
     pairs = 2 * (math.comb(calls, 2) + math.comb(puts, 2))
     butterflies = math.comb(calls, 3) + math.comb(puts, 3)
     return pairs + butterflies + 2 * matched
@@ -309,7 +315,11 @@ def audit_snapshot(
     ]
     for source, observed, quote in all_times:
         age = (now - observed).total_seconds()
-        detail = {"option_type": quote.option_type, "strikes": [quote.strike]} if quote else {}
+        detail = (
+            {"option_type": quote.option_type, "strikes": [quote.strike]}
+            if quote
+            else {}
+        )
         if age > policy.max_quote_age_seconds:
             add(_finding(f"STALE_{source}", **detail))
         elif age < -policy.max_future_skew_seconds:
@@ -322,12 +332,16 @@ def audit_snapshot(
         if quote.bid > quote.ask + policy.numerical_tolerance:
             add(
                 _finding(
-                    "CROSSED_OPTION_MARKET", option_type=quote.option_type, strikes=[quote.strike]
+                    "CROSSED_OPTION_MARKET",
+                    option_type=quote.option_type,
+                    strikes=[quote.strike],
                 )
             )
             continue
         midpoint = 0.5 * (quote.bid + quote.ask)
-        relative_spread = (quote.ask - quote.bid) / max(midpoint, policy.numerical_tolerance)
+        relative_spread = (quote.ask - quote.bid) / max(
+            midpoint, policy.numerical_tolerance
+        )
         if relative_spread > policy.max_relative_spread + policy.numerical_tolerance:
             add(
                 _finding(
@@ -469,7 +483,9 @@ def load_artifact(path: Path, policy: AuditPolicy = DEFAULT_POLICY) -> Any:
     except UnicodeDecodeError as exc:
         raise ArtifactError("input artifact must be UTF-8") from exc
     try:
-        return json.loads(text, object_pairs_hook=_unique_object, parse_constant=_reject_constant)
+        return json.loads(
+            text, object_pairs_hook=_unique_object, parse_constant=_reject_constant
+        )
     except json.JSONDecodeError as exc:
         raise ArtifactError("input artifact is not valid JSON") from exc
 
